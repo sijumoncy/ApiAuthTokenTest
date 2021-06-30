@@ -1,0 +1,32 @@
+Excercise Task
+--------------
+
+Things to learn
+- file operations (read, write, append) in python
+- working with unicode in files, and DB
+- regex
+- input and output formats like json, csv, tsv etc
+- usfm(?)
+
+
+Data:
+1. One text file with Malayalam John 1
+2. One json file with English John 1
+3. One CSV file listing special bible words
+
+
+Model DB as per the following guidelines:
+- Two bible tables with excatly same structure, one for malayalam and one for English. Load Jhn 1 as sample data to them
+- Have one table for special bible words
+- Have tables connecting the "special bible words" to verses(or rows) in bible tables based on where they occur
+
+Build APIs that:
+- input bible data as text files of format as in sample, and load them to specified bible tables
+- input bible data as json files of format as in sample, and load them to specified bible tables
+- fetch all verses of a specified bible as a list of (book, chapter, versenumber, verseText)
+- fetch one verse of a bible, given bible name and refernce as a json
+	{"book:"value", "chapter":"value", "verseNumber": "value", "verseText": "value"}
+- given a special word as input in English, list all verses(in both bibles) that contain it
+- given any random word in english, find all verses it has(use search within DB not in python)
+- given any random word in malayalam, find all verses it has(use search within DB not in python)
+
