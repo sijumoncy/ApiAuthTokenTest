@@ -6,16 +6,21 @@ from scripts.inputconvert import texttojson
 from scripts.adddbdata import dbentry,keywordadd
 from scripts.getbook import fetchbook,fetchverse,fetchword,randomword
 import json
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
-
+#auth section
+from auth import AuthHandler
+import schemas
+from scripts.auth_scripts import register_user,user_login
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)  
 session = Session()
 
-app = FastAPI(title="Book API")
+auth_handler = AuthHandler()
+
+app = FastAPI(title="Book API with Auth")
 destination_path = r"inputfiles"
 
 #cross origin resource sharing permissions
@@ -31,9 +36,24 @@ app.add_middleware(
 def home():
     return {"msg":"Welcome to the API Portal"}
 
+
+#auth 
+@app.post('/register')
+async def register(auth_details:schemas.AuthDetails):
+    """register user"""
+    data = register_user(auth_details, session)
+    return data
+
+@app.post('/login')
+def login(auth_details:schemas.AuthDetails):
+    """user login"""
+    data = user_login(auth_details, session)
+    return data
+
 #handle upload files
 @app.post("/upload-text-file")
-async def uploadfiles(langauage:str , file:UploadFile = File(...)):
+async def uploadfiles( langauage:str , file:UploadFile = File(...),\
+    username = Depends(auth_handler.auth_wrapper)):
     lan = langauage.capitalize()
     file_name = file.filename
     file_location = f"files/{file_name}"
