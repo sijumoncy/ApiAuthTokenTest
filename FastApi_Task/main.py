@@ -12,7 +12,7 @@ import shutil
 #auth section
 from auth import AuthHandler
 import schemas
-from scripts.auth_scripts import register_user,user_login
+from scripts.auth_scripts import user_login_kratos #register_user
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)  
@@ -37,23 +37,29 @@ def home():
     return {"msg":"Welcome to the API Portal"}
 
 
-#auth 
-@app.post('/register')
-async def register(auth_details:schemas.AuthDetails):
-    """register user"""
-    data = register_user(auth_details, session)
-    return data
+# #auth 
+# @app.post('/register')
+# async def register(auth_details:schemas.AuthDetails):
+#     """register user"""
+#     data = register_user(auth_details, session)
+#     return data
 
 @app.post('/login')
 def login(auth_details:schemas.AuthDetails):
     """user login"""
-    data = user_login(auth_details, session)
+    data = user_login_kratos(auth_details)
     return data
 
+# @app.post('/logout')
+# def logout(message = Depends(auth_handler.kratos_logout)):
+#     """user logout"""
+#     return {"Logout": "Success"}
+
 #handle upload files
+#username = Depends(auth_handler.auth_wrapper)
 @app.post("/upload-text-file")
 async def uploadfiles( langauage:str , file:UploadFile = File(...),\
-    username = Depends(auth_handler.auth_wrapper)):
+    username = Depends(auth_handler.kratos_session_validation)):
     lan = langauage.capitalize()
     file_name = file.filename
     file_location = f"files/{file_name}"
@@ -62,7 +68,7 @@ async def uploadfiles( langauage:str , file:UploadFile = File(...),\
 
     if file_name.endswith(".txt"):
         jsonobj = texttojson(file_name)
-        dbentry(jsonobj, session, lan)      
+        dbentry(jsonobj, session, lan)
     elif file_name.endswith(".json"):
         with open(file_location) as json_file:
             enjson = json.load(json_file)
