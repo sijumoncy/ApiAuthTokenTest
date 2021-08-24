@@ -1,57 +1,50 @@
 """Auth related """
+from os import name
 from fastapi.exceptions import HTTPException
 from sqlalchemy.sql.functions import user
 from models import User
 from auth import AuthHandler
-
-
 import requests
 import json
 
 auth_handler = AuthHandler()
 
-current_user = None
+def user_register_kratos(register_details):
+    """user registration kratos"""
+    email = register_details.email
+    password = register_details.password
+    firstname = register_details.firstname
+    lastname = register_details.lastname
 
-# def register_user(auth_details, session):
-#     """register user"""
-#     username = auth_details.username
-#     password =  auth_details.password
-#     data = {"details":""}
+    reg_flow = requests.get("http://127.0.0.1:4433/self-service/registration/api")
+    if reg_flow.status_code == 200:
+        flow_res = json.loads(reg_flow.content)
+        reg_flow_id = flow_res["ui"]["action"]
 
-#     db_user =  session.query(User).filter(User.username == username).first()
-#     if db_user:
-#         raise HTTPException(status_code=400, detail="Username Already registered")
-#     else:
-#         hashed_pwd = auth_handler.get_hash_password(password=password)
-#         new_entry = User(
-#                    username = username,
-#                    hashed_pass = hashed_pwd
-#                 )
-
-#         session.add(new_entry)
-#         session.commit()
-#         data["details"] = "Registration Success"
-#         return data
-
-# def user_login(auth_details, session):
-#     """user login"""
-#     username = auth_details.username
-#     password =  auth_details.password
-#     data = {"details":"","token":""}
-
-#     db_user =  session.query(User).filter(User.username == username).first()
-#     if db_user:
-#         if auth_handler.verify_password(plain_pwd=password,\
-#             hashed_pwd=db_user.hashed_pass):
-#             token = auth_handler.encode_token(db_user.username)
-#             data["details"] = "Login Succesfull"
-#             data["token"] = token
-
-#         else:
-#             raise HTTPException(status_code=401, detail="Invalid Credentials, Login Failed")
-#     else:
-#             raise HTTPException(status_code=401, detail="No such user exist, Register First")
-#     return data
+        reg_data = {"traits.email": email,
+                     "traits.name.first": firstname,
+                     "traits.name.last": lastname,  
+                     "password": password,
+                     "method": "password"}
+        headers = {}
+        headers["Accept"] = "application/json"
+        headers["Content-Type"] = "application/json"
+        reg_req = requests.post(reg_flow_id,headers=headers,json=reg_data)
+        reg_response = json.loads(reg_req.content)
+        if reg_req.status_code == 200:
+            name_path = reg_response["identity"]["traits"]["name"]
+            data={
+                "details":"Registration Successfull",
+                "registered_detials":{
+                    "id":reg_response["identity"]["id"],
+                    "email":reg_response["identity"]["traits"]["email"],
+                    "Name":str(name_path["first"]) + " " + str(name_path["last"]) 
+                },
+                "token":reg_response["session_token"]
+            }
+            return data
+        elif reg_req.status_code == 400:
+            raise HTTPException(status_code=reg_req.status_code, detail=reg_response["ui"]["messages"][0]["text"])
 
 def user_login_kratos(auth_details):
     "kratos login"
@@ -71,6 +64,8 @@ def user_login_kratos(auth_details):
             session_id = login_req["session_token"]
             data["details"] = "Login Succesfull"
             data["token"] = session_id
+            #print(session_id)
+            print(login_req)
             return data
         else:
             raise HTTPException(status_code=401, detail="Invalid Credential")

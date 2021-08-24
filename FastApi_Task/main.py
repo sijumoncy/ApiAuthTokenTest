@@ -12,7 +12,7 @@ import shutil
 #auth section
 from auth import AuthHandler
 import schemas
-from scripts.auth_scripts import user_login_kratos #register_user
+from scripts.auth_scripts import user_login_kratos,user_register_kratos
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)  
@@ -34,26 +34,24 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-    return {"msg":"Welcome to the API Portal"}
+    return {"msg":"Welcome to the API Portal with Kratos"}
 
-
-# #auth 
-# @app.post('/register')
-# async def register(auth_details:schemas.AuthDetails):
-#     """register user"""
-#     data = register_user(auth_details, session)
-#     return data
-
+@app.post('/register')
+def register(register_details:schemas.Registration):
+    """user register"""
+    data = user_register_kratos(register_details)
+    return data
+    
 @app.post('/login')
 def login(auth_details:schemas.AuthDetails):
     """user login"""
     data = user_login_kratos(auth_details)
     return data
 
-# @app.post('/logout')
-# def logout(message = Depends(auth_handler.kratos_logout)):
-#     """user logout"""
-#     return {"Logout": "Success"}
+@app.post('/logout')
+def logout(message = Depends(auth_handler.kratos_logout)):
+    """user logout"""
+    return message
 
 #handle upload files
 #username = Depends(auth_handler.auth_wrapper)
@@ -100,15 +98,6 @@ async def getword(word:str):
 async def randomsearch(word:str, language:str):
     data = randomword(word,session,language)
     return data
-
-
-
-
-'''
-#Functions for adding keywords with duplicate entry restrict
-tempararily add this functionality along with ml-db entry function
-keywordadd(session)
-'''
 
 
 
