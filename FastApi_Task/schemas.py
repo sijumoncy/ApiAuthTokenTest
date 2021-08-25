@@ -11,3 +11,8 @@ class Registration(BaseModel):
     password:str
     firstname:str
     lastname:str
+
+class userrole(BaseModel):
+    """kratos user role"""
+    userid:str
+    roles:list

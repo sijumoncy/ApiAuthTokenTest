@@ -1,7 +1,5 @@
 """Auth related """
-from os import name
 from fastapi.exceptions import HTTPException
-from sqlalchemy.sql.functions import user
 from models import User
 from auth import AuthHandler
 import requests
@@ -20,10 +18,9 @@ def user_register_kratos(register_details):
     if reg_flow.status_code == 200:
         flow_res = json.loads(reg_flow.content)
         reg_flow_id = flow_res["ui"]["action"]
-
         reg_data = {"traits.email": email,
                      "traits.name.first": firstname,
-                     "traits.name.last": lastname,  
+                     "traits.name.last": lastname,
                      "password": password,
                      "method": "password"}
         headers = {}
@@ -31,6 +28,7 @@ def user_register_kratos(register_details):
         headers["Content-Type"] = "application/json"
         reg_req = requests.post(reg_flow_id,headers=headers,json=reg_data)
         reg_response = json.loads(reg_req.content)
+        
         if reg_req.status_code == 200:
             name_path = reg_response["identity"]["traits"]["name"]
             data={
@@ -52,7 +50,7 @@ def user_login_kratos(auth_details):
     password =  auth_details.password
     data = {"details":"","token":""}
 
-    flow_res = requests.get("http://127.0.0.1:4433/self-service/login/api")
+    flow_res = requests.get("http://127.0.0.1:4433/self-service/login/api/")
     if flow_res.status_code == 200:
         flow_res = json.loads(flow_res.content)
         flow_id = flow_res["ui"]["action"]
@@ -64,8 +62,42 @@ def user_login_kratos(auth_details):
             session_id = login_req["session_token"]
             data["details"] = "Login Succesfull"
             data["token"] = session_id
-            #print(session_id)
-            print(login_req)
             return data
         else:
             raise HTTPException(status_code=401, detail="Invalid Credential")
+
+def user_role_add(user_id,roles_list):
+    """user role add from admin"""
+    base_url = "http://127.0.0.1:4434/identities/"
+    url = base_url + str(user_id)
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        user_data = json.loads(response.content)
+
+    else:
+        raise HTTPException(status_code=401, detail=json.loads(response.content))
+
+    schema_id = user_data["schema_id"]
+    state = user_data["state"]
+    traits = user_data["traits"]
+    traits["userrole"] = roles_list
+
+    data = {
+    "schema_id": schema_id,
+    "state": state,
+    "traits": traits
+    }
+
+    headers = {}
+    headers["Content-Type"] = "application/json"
+    Response = requests.put(url,headers=headers,json=data)
+    
+    if Response.status_code == 200:
+        resp_data = json.loads(Response.content)
+        if roles_list == resp_data["traits"]["userrole"]:
+            return {"details":"User Roles Updated"}
+        else:
+            return {"details":"Something went wrong .. Try again!"}    
+    else:
+       raise HTTPException(status_code=401, detail=json.loads(Response.content))

@@ -7,6 +7,7 @@ from datetime import datetime,timedelta
 import requests
 import json
 
+
 class AuthHandler():
     """Authentication class"""
     security = HTTPBearer()
@@ -24,8 +25,13 @@ class AuthHandler():
 
         user_data = requests.get(user_url, headers=headers)
         data = json.loads(user_data.content)
+
         if user_data.status_code == 200:
-            return data
+            if "userrole" in data["identity"]["traits"]:
+                roles = data["identity"]["traits"]["userrole"]
+                return roles
+            else:
+                return []    
 
         elif user_data.status_code == 401:
             raise HTTPException(status_code=401, detail=data["error"])
